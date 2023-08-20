@@ -1,0 +1,62 @@
+# (1) Receivers is how data gets into the Collector.
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+# (2) Processors are run on data between being received
+# and being exported.
+processors:
+  batch:
+
+# (3) Exporters is how you send data to one or more
+# backends.
+exporters:
+  # Data sources: traces, metrics, logs.
+  logging: # aka, stdOut/stdErr
+    loglevel: debug
+
+  # Data sources: traces.
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+
+  # Data sources: metrics.
+  prometheus:
+    endpoint: 0.0.0.0:8889 # Export the metrics at otelcol:8889/metrics
+    namespace: default
+    send_timestamps: true
+    metric_expiration: 180m
+    resource_to_telemetry_conversion:
+      enabled: true
+
+
+# (4) Extensions are available primarily for tasks that do
+# not involve processing telemetry data.
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
+# (5) The service section is used to configure what
+# components are enabled in the Collector based on the
+# configuration found in receivers, processors, exporters
+# and extensions sections.
+service:
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]
